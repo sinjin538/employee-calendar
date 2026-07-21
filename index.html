@@ -14,20 +14,46 @@
         body { background-color: #f4f6f9; margin: 0; padding: 15px 10px; display: flex; flex-direction: column; align-items: center; }
         .container { background: white; padding: 20px 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 1100px; }
         
+        /* 잠금 화면 (인증 전) */
+        .lock-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .lock-card {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            padding: 30px 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            max-width: 380px;
+            width: 100%;
+        }
+        .lock-icon { font-size: 48px; margin-bottom: 15px; }
+        .lock-title { font-size: 20px; font-weight: bold; color: #2d3748; margin-bottom: 8px; }
+        .lock-desc { font-size: 13px; color: #718096; margin-bottom: 20px; line-height: 1.4; }
+        .lock-btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
         /* 상단 헤더 */
         .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 15px; }
         .header-bar h1 { margin: 0; font-size: 20px; color: #1a202c; }
-        .admin-controls { display: flex; align-items: center; gap: 8px; }
-        .admin-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #edf2f7; color: #4a5568; }
-        .admin-badge.active { background-color: #e53e3e; color: white; }
+        .admin-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .admin-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #3182ce; color: white; }
+        .admin-badge.admin-mode { background-color: #e53e3e; color: white; }
         .btn { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; white-space: nowrap; }
         .btn-primary { background-color: #3182ce; color: white; }
+        .btn-danger { background-color: #e53e3e; color: white; }
+        .btn-gray { background-color: #718096; color: white; }
 
         /* 관리자 전용 바로 입력 상자 */
         .quick-input-box { display: none; background: #eef6ff; border: 2px solid #3182ce; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .quick-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .quick-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .quick-header h3 { margin: 0; font-size: 15px; color: #2b6cb0; }
-        .btn-pw-change { background: #718096; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+        .pw-change-group { display: flex; gap: 6px; }
+        .btn-pw-change { background: #718096; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; }
 
         .form-grid { display: grid; grid-template-columns: 1.2fr 1.5fr 1fr 1fr; gap: 8px; }
         .form-grid input { padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; width: 100%; height: 44px; }
@@ -120,75 +146,96 @@
 <body>
 
 <div class="container">
-    <div class="header-bar">
-        <h1>🗓️ 직원 타임수 현황판</h1>
-        <div class="admin-controls">
-            <span id="admin-badge" class="admin-badge">직원 (조회전용)</span>
-            <button id="auth-btn" class="btn btn-primary" onclick="toggleAdmin()">관리자 인증</button>
-        </div>
-    </div>
 
-    <!-- 관리자 전용 바로 입력 상자 -->
-    <div id="quick-input-box" class="quick-input-box">
-        <div class="quick-header">
-            <h3>✏️ 관리자 타임수 바로 입력</h3>
-            <button class="btn-pw-change" onclick="changeAdminPassword()">🔑 비밀번호 변경</button>
-        </div>
-        <div class="form-grid">
-            <input type="date" id="input-date">
-            
-            <div class="name-input-container">
-                <input type="text" id="input-name" placeholder="직원 이름 (예: 홍길동)" 
-                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                       oninput="showNameSuggestions()" onfocus="showNameSuggestions()">
-                <div id="name-suggestions-box" class="custom-suggestions-box"></div>
+    <!-- 🔒 잠금 화면 (비밀번호 입력 전) -->
+    <div id="lock-screen" class="lock-screen">
+        <div class="lock-card">
+            <div class="lock-icon">🔒</div>
+            <div class="lock-title">보안 접근 인증</div>
+            <div class="lock-desc">내용을 확인하시려면 직원 또는 관리자 비밀번호를 입력하여 입장하세요.</div>
+            <div class="lock-btn-group">
+                <button class="btn btn-primary" style="padding:12px;" onclick="loginAsStaff()">👤 직원 로그인 (조회 전용)</button>
+                <button class="btn btn-danger" style="padding:12px;" onclick="loginAsAdmin()">🔑 관리자 로그인 (수정 가능)</button>
             </div>
-
-            <input type="number" id="input-time" placeholder="타임수 (예: 5)" step="0.5">
-            <button class="btn-save-main" onclick="addTimeDataQuick()">입력 / 수정 저장</button>
         </div>
     </div>
 
-    <div class="month-nav">
-        <button onclick="changeMonth(-1)">&lt; 이전달</button>
-        <h2 id="month-display">2026년 07월</h2>
-        <button onclick="changeMonth(1)">다음달 &gt;</button>
-    </div>
-
-    <div class="calendar-scroll-container">
-        <div class="calendar-inner">
-            <div class="days-header">
-                <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
+    <!-- 🗓️ 본문 메인 화면 (인증 후 표시) -->
+    <div id="main-content" style="display: none;">
+        <div class="header-bar">
+            <h1>🗓️ 직원 타임수 현황판</h1>
+            <div class="admin-controls">
+                <span id="admin-badge" class="admin-badge">직원 (조회 전용)</span>
+                <button id="auth-btn" class="btn btn-danger" onclick="toggleAdmin()">관리자 전환</button>
+                <button class="btn btn-gray" onclick="logout()">로그아웃</button>
             </div>
-            <div id="dates-grid" class="dates-grid"></div>
         </div>
-    </div>
 
-    <!-- 하단 직원별 월 합계 영역 -->
-    <div class="summary-section">
-        <div class="summary-header">
-            <h3>📊 직원 개인별 월 합계 조회</h3>
-            <div class="summary-tools">
-                <div class="name-input-container">
-                    <input type="text" id="summary-search" class="search-input" 
-                           placeholder="🔍 직원 이름 입력..."
-                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                           oninput="handleSummarySearchInput()" onfocus="showSummarySuggestions()">
-                    <div id="summary-suggestions-box" class="custom-suggestions-box"></div>
+        <!-- 관리자 전용 바로 입력 상자 -->
+        <div id="quick-input-box" class="quick-input-box">
+            <div class="quick-header">
+                <h3>✏️ 관리자 타임수 바로 입력</h3>
+                <div class="pw-change-group">
+                    <button class="btn-pw-change" onclick="changeStaffPassword()">🔑 직원 비번 변경</button>
+                    <button class="btn-pw-change" onclick="changeAdminPassword()">🔑 관리자 비번 변경</button>
                 </div>
             </div>
+            <div class="form-grid">
+                <input type="date" id="input-date">
+                
+                <div class="name-input-container">
+                    <input type="text" id="input-name" placeholder="직원 이름 (예: 홍길동)" 
+                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                           oninput="showNameSuggestions()" onfocus="showNameSuggestions()">
+                    <div id="name-suggestions-box" class="custom-suggestions-box"></div>
+                </div>
+
+                <input type="number" id="input-time" placeholder="타임수 (예: 5)" step="0.5">
+                <button class="btn-save-main" onclick="addTimeDataQuick()">입력 / 수정 저장</button>
+            </div>
         </div>
-        <div class="summary-table-wrapper">
-            <table class="summary-table">
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">순번</th>
-                        <th style="width: 45%;">직원 이름</th>
-                        <th style="width: 35%;">이번 달 누적 타임수</th>
-                    </tr>
-                </thead>
-                <tbody id="summary-tbody"></tbody>
-            </table>
+
+        <div class="month-nav">
+            <button onclick="changeMonth(-1)">&lt; 이전달</button>
+            <h2 id="month-display">2026년 07월</h2>
+            <button onclick="changeMonth(1)">다음달 &gt;</button>
+        </div>
+
+        <div class="calendar-scroll-container">
+            <div class="calendar-inner">
+                <div class="days-header">
+                    <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
+                </div>
+                <div id="dates-grid" class="dates-grid"></div>
+            </div>
+        </div>
+
+        <!-- 하단 직원별 월 합계 영역 -->
+        <div class="summary-section">
+            <div class="summary-header">
+                <h3>📊 직원 개인별 월 합계 조회</h3>
+                <div class="summary-tools">
+                    <div class="name-input-container">
+                        <input type="text" id="summary-search" class="search-input" 
+                               placeholder="🔍 직원 이름 입력..."
+                               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                               oninput="handleSummarySearchInput()" onfocus="showSummarySuggestions()">
+                        <div id="summary-suggestions-box" class="custom-suggestions-box"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="summary-table-wrapper">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">순번</th>
+                            <th style="width: 45%;">직원 이름</th>
+                            <th style="width: 35%;">이번 달 누적 타임수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -234,7 +281,7 @@
     const db = firebase.firestore();
 
     // -------------------------------------------------------------
-    // 🇰🇷 대한민국 공휴일 데이터베이스 (고정 공휴일 + 연도별 음력/대체 공휴일)
+    // 🇰🇷 대한민국 공휴일 데이터베이스
     // -------------------------------------------------------------
     const holidays = {
         fixed: {
@@ -248,18 +295,15 @@
             "12-25": "성탄절"
         },
         specific: {
-            // 2025년
             "2025-01-28": "설날 연휴", "2025-01-29": "설날", "2025-01-30": "설날 연휴",
             "2025-03-03": "대체공휴일", "2025-05-06": "대체공휴일",
             "2025-10-05": "추석 연휴", "2025-10-06": "추석", "2025-10-07": "추석 연휴", "2025-10-08": "대체공휴일",
             
-            // 2026년
             "2026-02-16": "설날 연휴", "2026-02-17": "설날", "2026-02-18": "설날 연휴",
             "2026-03-02": "대체공휴일", "2026-05-24": "부처님오신날", "2026-05-25": "대체공휴일",
             "2026-08-17": "대체공휴일", "2026-09-24": "추석 연휴", "2026-09-25": "추석", "2026-09-26": "추석 연휴",
             "2026-10-05": "대체공휴일",
 
-            // 2027년
             "2027-02-06": "설날 연휴", "2027-02-07": "설날", "2027-02-08": "설날 연휴", "2027-02-09": "대체공휴일",
             "2027-05-13": "부처님오신날", "2027-09-14": "추석 연휴", "2027-09-15": "추석", "2027-09-16": "추석 연휴",
             "2027-10-04": "대체공휴일", "2027-10-11": "대체공휴일"
@@ -277,10 +321,13 @@
     // 변수 및 데이터 선언
     // -------------------------------------------------------------
     let currentDate = new Date();
-    let isAdmin = false;
+    let isAuthenticated = false; // 로그인 완료 여부
+    let isAdmin = false;          // 관리자 권한 여부
     let selectedDateKey = null;
 
+    let staffPassword = localStorage.getItem('employeeStaffPw') || '0000';
     let adminPassword = localStorage.getItem('employeeAdminPw') || '1234';
+    
     let timesData = {};
     let savedEmployeeList = [];
 
@@ -296,7 +343,7 @@
               } else {
                   timesData = {};
               }
-              renderCalendar();
+              if (isAuthenticated) renderCalendar();
               if (selectedDateKey) renderModalList();
           });
 
@@ -315,13 +362,26 @@
         db.collection("employee_management").doc("employee_list").set({ list: savedEmployeeList });
     }
 
-    function changeAdminPassword() {
-        if (!isAdmin) return;
-        const newPw = prompt("새로운 관리자 비밀번호를 입력하세요:");
-        if (newPw && newPw.trim() !== "") {
-            adminPassword = newPw.trim();
-            localStorage.setItem('employeeAdminPw', adminPassword);
-            alert("관리자 비밀번호가 변경되었습니다.");
+    /* 🔐 인증 로직 */
+    function loginAsStaff() {
+        const inputPw = prompt("직원 조회용 비밀번호를 입력하세요:");
+        if (inputPw === staffPassword) {
+            isAuthenticated = true;
+            isAdmin = false;
+            showMainScreen();
+        } else if (inputPw !== null) {
+            alert("비밀번호가 틀렸습니다.");
+        }
+    }
+
+    function loginAsAdmin() {
+        const inputPw = prompt("관리자 비밀번호를 입력하세요:");
+        if (inputPw === adminPassword) {
+            isAuthenticated = true;
+            isAdmin = true;
+            showMainScreen();
+        } else if (inputPw !== null) {
+            alert("비밀번호가 틀렸습니다.");
         }
     }
 
@@ -330,22 +390,70 @@
             const password = prompt("관리자 비밀번호를 입력하세요:");
             if (password === adminPassword) {
                 isAdmin = true;
-                document.getElementById('admin-badge').textContent = "관리자 (수정 가능)";
-                document.getElementById('admin-badge').classList.add('active');
-                document.getElementById('auth-btn').textContent = "로그아웃";
-                document.getElementById('quick-input-box').style.display = 'block';
+                updateUIState();
             } else if (password !== null) {
                 alert("비밀번호가 올바르지 않습니다.");
             }
         } else {
             isAdmin = false;
-            document.getElementById('admin-badge').textContent = "직원 (조회전용)";
-            document.getElementById('admin-badge').classList.remove('active');
-            document.getElementById('auth-btn').textContent = "관리자 인증";
-            document.getElementById('quick-input-box').style.display = 'none';
+            updateUIState();
+        }
+    }
+
+    function logout() {
+        isAuthenticated = false;
+        isAdmin = false;
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('lock-screen').style.display = 'flex';
+    }
+
+    function showMainScreen() {
+        document.getElementById('lock-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        updateUIState();
+        renderCalendar();
+    }
+
+    function updateUIState() {
+        const badge = document.getElementById('admin-badge');
+        const authBtn = document.getElementById('auth-btn');
+        const quickInputBox = document.getElementById('quick-input-box');
+
+        if (isAdmin) {
+            badge.textContent = "관리자 (수정 가능)";
+            badge.classList.add('admin-mode');
+            authBtn.textContent = "직원모드 전환";
+            authBtn.className = "btn btn-primary";
+            quickInputBox.style.display = 'block';
+        } else {
+            badge.textContent = "직원 (조회 전용)";
+            badge.classList.remove('admin-mode');
+            authBtn.textContent = "관리자 전환";
+            authBtn.className = "btn btn-danger";
+            quickInputBox.style.display = 'none';
         }
         renderCalendar();
         if (selectedDateKey) renderModalList();
+    }
+
+    function changeStaffPassword() {
+        if (!isAdmin) return;
+        const newPw = prompt("새로운 직원용 비밀번호를 입력하세요:");
+        if (newPw && newPw.trim() !== "") {
+            staffPassword = newPw.trim();
+            localStorage.setItem('employeeStaffPw', staffPassword);
+            alert("직원용 비밀번호가 변경되었습니다.");
+        }
+    }
+
+    function changeAdminPassword() {
+        if (!isAdmin) return;
+        const newPw = prompt("새로운 관리자용 비밀번호를 입력하세요:");
+        if (newPw && newPw.trim() !== "") {
+            adminPassword = newPw.trim();
+            localStorage.setItem('employeeAdminPw', adminPassword);
+            alert("관리자용 비밀번호가 변경되었습니다.");
+        }
     }
 
     function changeMonth(delta) {
@@ -353,7 +461,7 @@
         renderCalendar();
     }
 
-    /* 1️⃣ 관리자 입력용 추천 검색 */
+    /* 추천 검색 관련 함수들 */
     function showNameSuggestions() {
         const inputVal = document.getElementById('input-name').value.trim().toLowerCase();
         const box = document.getElementById('name-suggestions-box');
@@ -387,7 +495,6 @@
         document.getElementById('input-time').focus();
     }
 
-    /* 2️⃣ 하단 월 합계 조회용 추천 검색 */
     function handleSummarySearchInput() {
         showSummarySuggestions();
         renderMonthlySummaryCurrent();
@@ -426,7 +533,6 @@
         renderMonthlySummaryCurrent();
     }
 
-    /* 3️⃣ 날짜 팝업 모달용 추천 검색 */
     function handleModalSearchInput() {
         showModalSuggestions();
         renderModalList();
@@ -469,7 +575,6 @@
         renderModalList();
     }
 
-    // 영역 바깥 터치 시 추천창 닫기
     document.addEventListener('click', function(e) {
         document.querySelectorAll('.name-input-container').forEach(container => {
             if (!container.contains(e.target)) {
@@ -536,12 +641,10 @@
             const dayPadded = String(day).padStart(2, '0');
             const dateKey = `${year}-${monthPadded}-${dayPadded}`;
             
-            // 요일 계산 (0: 일, 6: 토)
             const cellDate = new Date(year, month - 1, day);
             const dayOfWeek = cellDate.getDay();
             const holidayName = getHolidayName(dateKey);
 
-            // 색상 클래스 지정 (일요일/공휴일=sun, 토요일=sat)
             let colorClass = '';
             if (dayOfWeek === 0 || holidayName) {
                 colorClass = 'sun';
