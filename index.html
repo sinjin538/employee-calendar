@@ -46,7 +46,7 @@
             border-radius: 8px; 
             max-height: 180px; 
             overflow-y: auto; 
-            z-index: 100; 
+            z-index: 1001; 
             box-shadow: 0 6px 16px rgba(0,0,0,0.15); 
         }
         .suggestion-item { padding: 12px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #edf2f7; color: #2d3748; font-weight: 500; }
@@ -88,6 +88,7 @@
         .summary-table { width: 100%; border-collapse: collapse; text-align: left; }
         .summary-table th, .summary-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
         .summary-table th { background-color: #f7fafc; color: #4a5568; font-weight: bold; }
+        .summary-table tbody tr:hover { background-color: #ebf8ff; }
         .total-val { color: #3182ce; font-weight: bold; font-size: 14px; }
 
         /* 일별 상세 내역 모달 */
@@ -165,7 +166,13 @@
         <div class="summary-header">
             <h3>📊 직원 개인별 월 합계 조회</h3>
             <div class="summary-tools">
-                <input type="text" id="summary-search" class="search-input" oninput="renderMonthlySummaryCurrent()" placeholder="🔍 직원 이름 입력...">
+                <div class="name-input-container">
+                    <input type="text" id="summary-search" class="search-input" 
+                           placeholder="🔍 직원 이름 입력..."
+                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                           oninput="handleSummarySearchInput()" onfocus="showSummarySuggestions()">
+                    <div id="summary-suggestions-box" class="custom-suggestions-box"></div>
+                </div>
             </div>
         </div>
         <div class="summary-table-wrapper">
@@ -192,7 +199,15 @@
         </div>
         <div class="modal-body">
             <div id="modal-summary-badge" class="modal-summary-badge">총 0명 / 0 타임</div>
-            <input type="text" id="modal-search" class="search-input" oninput="renderModalList()" placeholder="🔍 이 날짜의 직원 이름 검색...">
+            
+            <div class="name-input-container">
+                <input type="text" id="modal-search" class="search-input" 
+                       placeholder="🔍 이 날짜의 직원 이름 검색..."
+                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                       oninput="handleModalSearchInput()" onfocus="showModalSuggestions()">
+                <div id="modal-suggestions-box" class="custom-suggestions-box"></div>
+            </div>
+
             <ul id="modal-list" class="modal-list"></ul>
         </div>
     </div>
@@ -200,7 +215,7 @@
 
 <script>
     // -------------------------------------------------------------
-    // 🔥 파이어베이스 설정 (적용 완료!)
+    // 🔥 파이어베이스 설정 정보
     // -------------------------------------------------------------
     const firebaseConfig = {
       apiKey: "AIzaSyDfVycUkONZs-RCBHqwzFweS-5avrWUhVc",
@@ -232,7 +247,6 @@
 
     // 🔥 Firestore 데이터 실시간 동기화 구독 함수
     function initFirestoreListener() {
-        // 타임수 데이터 실시간 수신
         db.collection("employee_management").doc("times_data")
           .onSnapshot((doc) => {
               if (doc.exists) {
@@ -244,7 +258,6 @@
               if (selectedDateKey) renderModalList();
           });
 
-        // 직원 목록 실시간 수신
         db.collection("employee_management").doc("employee_list")
           .onSnapshot((doc) => {
               if (doc.exists) {
@@ -299,28 +312,24 @@
         renderCalendar();
     }
 
+    /* 1️⃣ 관리자 입력용 추천 검색 기능 */
     function showNameSuggestions() {
         const inputVal = document.getElementById('input-name').value.trim().toLowerCase();
         const box = document.getElementById('name-suggestions-box');
         box.innerHTML = '';
 
-        if (savedEmployeeList.length === 0) {
+        if (savedEmployeeList.length === 0 || !inputVal) {
             box.style.display = 'none';
             return;
         }
 
         const matches = savedEmployeeList.filter(name => name.toLowerCase().includes(inputVal));
-
-        if (matches.length === 0) {
-            box.style.display = 'none';
-            return;
-        }
+        if (matches.length === 0) { box.style.display = 'none'; return; }
 
         matches.forEach(name => {
             const item = document.createElement('div');
             item.className = 'suggestion-item';
             item.textContent = name;
-            
             item.onmousedown = (e) => {
                 e.preventDefault();
                 selectNameSuggestion(name);
@@ -337,11 +346,96 @@
         document.getElementById('input-time').focus();
     }
 
-    document.addEventListener('click', function(e) {
-        const container = document.querySelector('.name-input-container');
-        if (container && !container.contains(e.target)) {
-            document.getElementById('name-suggestions-box').style.display = 'none';
+    /* 2️⃣ 하단 월 합계 조회용 추천 검색 기능 */
+    function handleSummarySearchInput() {
+        showSummarySuggestions();
+        renderMonthlySummaryCurrent();
+    }
+
+    function showSummarySuggestions() {
+        const inputVal = document.getElementById('summary-search').value.trim().toLowerCase();
+        const box = document.getElementById('summary-suggestions-box');
+        box.innerHTML = '';
+
+        if (savedEmployeeList.length === 0 || !inputVal) {
+            box.style.display = 'none';
+            return;
         }
+
+        const matches = savedEmployeeList.filter(name => name.toLowerCase().includes(inputVal));
+        if (matches.length === 0) { box.style.display = 'none'; return; }
+
+        matches.forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = name;
+            item.onmousedown = (e) => {
+                e.preventDefault();
+                selectSummaryNameSuggestion(name);
+            };
+            box.appendChild(item);
+        });
+
+        box.style.display = 'block';
+    }
+
+    function selectSummaryNameSuggestion(name) {
+        document.getElementById('summary-search').value = name;
+        document.getElementById('summary-suggestions-box').style.display = 'none';
+        renderMonthlySummaryCurrent();
+    }
+
+    /* 3️⃣ 날짜 팝업 모달용 추천 검색 기능 */
+    function handleModalSearchInput() {
+        showModalSuggestions();
+        renderModalList();
+    }
+
+    function showModalSuggestions() {
+        if (!selectedDateKey) return;
+        const dayData = timesData[selectedDateKey] || {};
+        const empNames = Object.keys(dayData);
+
+        const inputVal = document.getElementById('modal-search').value.trim().toLowerCase();
+        const box = document.getElementById('modal-suggestions-box');
+        box.innerHTML = '';
+
+        if (empNames.length === 0 || !inputVal) {
+            box.style.display = 'none';
+            return;
+        }
+
+        const matches = empNames.filter(name => name.toLowerCase().includes(inputVal));
+        if (matches.length === 0) { box.style.display = 'none'; return; }
+
+        matches.forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = name;
+            item.onmousedown = (e) => {
+                e.preventDefault();
+                selectModalNameSuggestion(name);
+            };
+            box.appendChild(item);
+        });
+
+        box.style.display = 'block';
+    }
+
+    function selectModalNameSuggestion(name) {
+        document.getElementById('modal-search').value = name;
+        document.getElementById('modal-suggestions-box').style.display = 'none';
+        renderModalList();
+    }
+
+    // 영역 바깥 터치 시 모든 추천 목록 닫기
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.name-input-container').forEach(container => {
+            if (!container.contains(e.target)) {
+                const box = container.querySelector('.custom-suggestions-box');
+                if (box) box.style.display = 'none';
+            }
+        });
     });
 
     function addTimeDataQuick() {
@@ -358,7 +452,7 @@
 
         if (!savedEmployeeList.includes(nameInput)) savedEmployeeList.push(nameInput);
 
-        saveData(); // Firestore에 실시간 저장
+        saveData();
 
         document.getElementById('input-name').value = '';
         document.getElementById('input-time').value = '';
@@ -373,7 +467,7 @@
         if (!isAdmin) return;
         if (confirm(`[${dateKey}] ${empName} 님의 내역을 삭제하시겠습니까?`)) {
             delete timesData[dateKey][empName];
-            saveData(); // Firestore에 실시간 삭제 반영
+            saveData();
         }
     }
 
@@ -434,6 +528,9 @@
         document.getElementById('modal-date-title').textContent = `📅 ${y}년 ${m}월 ${d}일 상세 내역`;
         document.getElementById('modal-search').value = '';
         
+        const modalBox = document.getElementById('modal-suggestions-box');
+        if (modalBox) modalBox.style.display = 'none';
+
         renderModalList();
         document.getElementById('date-modal').classList.add('active');
     }
@@ -442,6 +539,8 @@
         if (!event || event.target.id === 'date-modal' || event.target.classList.contains('modal-close')) {
             document.getElementById('date-modal').classList.remove('active');
             selectedDateKey = null;
+            const modalBox = document.getElementById('modal-suggestions-box');
+            if (modalBox) modalBox.style.display = 'none';
         }
     }
 
@@ -460,7 +559,13 @@
         const modalList = document.getElementById('modal-list');
         modalList.innerHTML = '';
 
-        const filteredNames = empNames.filter(name => name.toLowerCase().includes(searchKeyword));
+        let filteredNames = empNames.filter(name => name.toLowerCase().includes(searchKeyword));
+
+        // 정확히 일치하는 이름이 있을 경우 그 사람만 단독 표시
+        const exactMatch = filteredNames.find(name => name.toLowerCase() === searchKeyword);
+        if (exactMatch) {
+            filteredNames = [exactMatch];
+        }
 
         if (filteredNames.length === 0) {
             modalList.innerHTML = '<li style="text-align:center; color:#a0aec0; padding:20px;">등록된 직원 내역이 없습니다.</li>';
@@ -474,7 +579,7 @@
             const delBtnHtml = isAdmin ? `<button class="btn-del-item" onclick="deleteTime('${selectedDateKey}', '${empName}')">삭제</button>` : '';
 
             li.innerHTML = `
-                <div>
+                <div style="cursor:pointer; flex:1;" onclick="selectModalNameSuggestion('${empName}')">
                     <span class="modal-item-name">${empName}</span>
                 </div>
                 <div>
@@ -515,15 +620,24 @@
             return;
         }
 
-        const sortedEmployees = Object.keys(empTotals)
-            .filter(empName => empName.toLowerCase().includes(searchKeyword))
-            .sort((a, b) => empTotals[b] - empTotals[a]);
+        let filteredEmployees = Object.keys(empTotals)
+            .filter(empName => empName.toLowerCase().includes(searchKeyword));
+
+        // 정확히 일치하는 이름이 있을 경우 그 사람만 단독 표시
+        const exactMatch = filteredEmployees.find(empName => empName.toLowerCase() === searchKeyword);
+        if (exactMatch) {
+            filteredEmployees = [exactMatch];
+        }
+
+        const sortedEmployees = filteredEmployees.sort((a, b) => empTotals[b] - empTotals[a]);
 
         if (sortedEmployees.length === 0) {
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#e53e3e; padding:15px;">검색하신 직원 이름을 찾을 수 없거나 내역이 없습니다.</td></tr>';
         } else {
             sortedEmployees.forEach((empName, idx) => {
                 const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => selectSummaryNameSuggestion(empName);
                 tr.innerHTML = `
                     <td>${idx + 1}</td>
                     <td><b>${empName}</b></td>
@@ -534,7 +648,7 @@
         }
     }
 
-    // 실행 시 Firestore 실시간 동기화 작동
+    // Firestore 실시간 동기화 실행
     initFirestoreListener();
 </script>
 
