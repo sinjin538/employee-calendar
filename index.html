@@ -5,119 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>직원 타임수 종합 관리판</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        * { box-sizing: border-box; font-family: 'Pretendard', 'Malgun Gothic', sans-serif; }
+        body { background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 1100px; }
         
-        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 1100px; }
-        
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #edf2f7; }
-        .top-bar h1 { margin: 0; font-size: 20px; color: #2d3748; }
-        
-        .admin-box { display: flex; align-items: center; gap: 10px; }
-        .mode-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; background-color: #e2e8f0; color: #4a5568; }
-        .mode-badge.active { background-color: #e53e3e; color: white; }
-        .btn { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        /* 상단 헤더 */
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #edf2f7; padding-bottom: 15px; margin-bottom: 20px; }
+        .header-bar h1 { margin: 0; font-size: 22px; color: #1a202c; }
+        .admin-controls { display: flex; align-items: center; gap: 10px; }
+        .admin-badge { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; background-color: #edf2f7; color: #4a5568; }
+        .admin-badge.active { background-color: #e53e3e; color: white; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn-primary { background-color: #3182ce; color: white; }
-        
-        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: bold; margin-bottom: 15px; }
-        .month-header button { background: white; border: 1px solid #cbd5e0; border-radius: 5px; padding: 5px 12px; cursor: pointer; transition: 0.2s; }
-        .month-header button:hover { background: #edf2f7; }
-        
-        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; color: #4a5568; margin-bottom: 5px; }
+        .btn-primary:hover { background-color: #2b6cb0; }
+
+        /* 월 이동 컨트롤 */
+        .month-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .month-nav h2 { margin: 0; font-size: 22px; color: #2d3748; }
+        .month-nav button { background: white; border: 1px solid #cbd5e0; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .month-nav button:hover { background: #edf2f7; }
+
+        /* 달력 스타일 */
+        .days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 8px; color: #4a5568; }
         .sun { color: #e53e3e; }
         .sat { color: #3182ce; }
         
-        .dates-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .date-cell { border: 1px solid #e2e8f0; min-height: 120px; padding: 6px; border-radius: 6px; background: #fff; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s; }
-        .date-cell:hover { background-color: #f7fafc; border-color: #3182ce; }
+        .dates-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .date-cell { border: 1px solid #e2e8f0; min-height: 110px; max-height: 140px; padding: 6px; border-radius: 8px; background: #fff; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; transition: all 0.2s; }
+        .date-cell:hover { border-color: #3182ce; background-color: #f7fafc; }
         .date-cell.empty { background: transparent; border: none; cursor: default; }
-        .date-num { font-size: 13px; font-weight: bold; color: #2d3748; margin-bottom: 4px; }
+        .date-num { font-size: 14px; font-weight: bold; color: #2d3748; margin-bottom: 4px; }
+
+        .time-tags { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+        .tag { background: #ebf8ff; color: #2b6cb0; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* 하단 직원별 월 합계 표 */
+        .summary-section { margin-top: 35px; border-top: 2px solid #edf2f7; padding-top: 20px; }
+        .summary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .summary-header h3 { margin: 0; font-size: 18px; color: #2d3748; }
+        .grand-total-box { font-size: 15px; font-weight: bold; color: #2d3748; background: #edf2f7; padding: 8px 16px; border-radius: 8px; }
+        .grand-total-box span { color: #3182ce; font-size: 18px; }
+
+        .summary-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .summary-table th, .summary-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .summary-table th { background-color: #f7fafc; color: #4a5568; font-weight: bold; }
+        .summary-table tr:hover { background-color: #f8fafc; }
+        .total-val { color: #3182ce; font-weight: bold; font-size: 15px; }
+
+        /* 팝업 모달 */
+        .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999; }
+        .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 420px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; font-size: 18px; color: #2d3748; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #a0aec0; }
         
-        /* 날짜 내부 이름:타임 바 목록 */
-        .time-list-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-        .time-item { background-color: #ebf8ff; color: #2b6cb0; font-size: 11px; font-weight: 600; padding: 3px 5px; border-radius: 4px; display: inline-block; }
-        
-        /* 모달 (팝업 창) 디자인 */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal { background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { max-height: 300px; overflow-y: auto; margin-bottom: 15px; }
-        .modal-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #edf2f7; font-size: 15px; }
-        
-        /* 관리자 입력 폼 */
-        .admin-input-area { display: none; margin-top: 10px; padding-top: 15px; border-top: 2px dashed #cbd5e0; }
-        .input-group { display: flex; gap: 8px; margin-bottom: 10px; }
-        .input-group input { padding: 8px; border: 1px solid #cbd5e0; border-radius: 5px; font-size: 14px; }
-        .input-name { flex: 1.5; }
-        .input-time { flex: 1; }
-        .btn-add { width: 100%; background: #48bb78; color: white; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-add:hover { background: #38a169; }
-        .btn-close { width: 100%; background: #e2e8f0; color: #4a5568; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        
-        .delete-btn { color: #e53e3e; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .modal-list { max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
+        .modal-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f7fafc; border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
+        .modal-item .del-btn { color: #e53e3e; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+        .admin-form { border-top: 2px dashed #cbd5e0; padding-top: 15px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .form-row { display: flex; gap: 8px; }
+        .form-row input { flex: 1; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+        .btn-save { background: #48bb78; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-save:hover { background: #38a169; }
+        .notice-msg { font-size: 13px; color: #718096; text-align: center; background: #edf2f7; padding: 8px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="top-bar">
-        <h1>🗓️ 직원 타임수 달력 현황판</h1>
-        <div class="admin-box">
-            <span id="admin-badge" class="mode-badge">직원 (조회전용)</span>
+    <!-- 상단 헤더 -->
+    <div class="header-bar">
+        <h1>🗓️ 직원 타임수 현황판</h1>
+        <div class="admin-controls">
+            <span id="admin-badge" class="admin-badge">직원 (조회전용)</span>
             <button id="auth-btn" class="btn btn-primary" onclick="toggleAdmin()">관리자 인증</button>
         </div>
     </div>
 
-    <div class="month-header">
+    <!-- 월 선택 -->
+    <div class="month-nav">
         <button onclick="changeMonth(-1)">&lt; 이전달</button>
-        <span id="month-display">2026년 07월</span>
+        <h2 id="month-display">2026년 07월</h2>
         <button onclick="changeMonth(1)">다음달 &gt;</button>
     </div>
 
-    <div class="days-grid">
+    <!-- 요일 표시 -->
+    <div class="days-header">
         <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
     </div>
 
+    <!-- 달력 날짜 그리드 -->
     <div id="dates-grid" class="dates-grid"></div>
+
+    <!-- 하단 직원별 월 합계 영역 -->
+    <div class="summary-section">
+        <div class="summary-header">
+            <h3>📊 직원별 월 타임수 총 합계</h3>
+            <div class="grand-total-box">이번 달 전체 총합: <span id="grand-total">0</span> 타임</div>
+        </div>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">순번</th>
+                    <th style="width: 50%;">직원 이름</th>
+                    <th style="width: 40%;">이번 달 누적 타임수</th>
+                </tr>
+            </thead>
+            <tbody id="summary-tbody">
+                <!-- 자바스크립트로 자동 생성됨 -->
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<!-- 날짜 클릭 시 나타나는 상세 팝업창 -->
-<div id="modal-overlay" class="modal-overlay">
-    <div class="modal">
+<!-- 상세 모달 팝업 -->
+<div id="modal-backdrop" class="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-content">
         <div class="modal-header">
-            <span id="modal-date-title">날짜</span>
-            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:18px;">✕</button>
+            <h3 id="modal-title">근무 입력</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
         </div>
         
-        <!-- 입력된 직원 목록이 뜨는 곳 -->
-        <div id="modal-body" class="modal-body"></div>
-        
-        <!-- 관리자일 때만 보이는 입력창 -->
-        <div id="admin-input-area" class="admin-input-area">
-            <div class="input-group">
-                <input type="text" id="emp-name" class="input-name" placeholder="직원 이름 (예: 홍길동)">
-                <input type="number" id="emp-time" class="input-time" placeholder="타임수 (예: 5)" step="0.5">
+        <!-- 등록된 목록 -->
+        <div id="modal-list" class="modal-list"></div>
+
+        <!-- 관리자 작성 폼 -->
+        <div id="admin-form" class="admin-form">
+            <div class="form-row">
+                <input type="text" id="input-name" list="employee-suggestions" placeholder="직원 이름 (예: 홍길동)">
+                <datalist id="employee-suggestions"></datalist>
+                <input type="number" id="input-time" placeholder="타임수 (예: 5)" step="0.5">
             </div>
-            <button class="btn-add" onclick="addTimeData()">내역 추가하기</button>
+            <button class="btn-save" onclick="addTimeData()">추가 / 수정하기</button>
         </div>
-        
-        <button class="btn-close" onclick="closeModal()">닫기</button>
+
+        <!-- 직원 안내 문구 -->
+        <div id="notice-msg" class="notice-msg" style="display: none;">
+            🔒 직원 모드에서는 조회만 가능합니다. 상단 '관리자 인증' 버튼을 눌러 로그인하세요.
+        </div>
     </div>
 </div>
 
 <script>
     let currentDate = new Date();
     let isAdmin = false;
-    let selectedDateKey = ''; // 현재 선택된 날짜 (예: 2026-07-21)
-    
-    // 데이터 저장소
-    let timesData = JSON.parse(localStorage.getItem('employeeTimesData_v4')) || {};
+    let selectedDateKey = '';
+
+    // 데이터 저장
+    let timesData = JSON.parse(localStorage.getItem('employeeTimesData_v5')) || {};
+    let savedEmployeeList = JSON.parse(localStorage.getItem('employeeNameList')) || [];
 
     function saveData() {
-        localStorage.setItem('employeeTimesData_v4', JSON.stringify(timesData));
+        localStorage.setItem('employeeTimesData_v5', JSON.stringify(timesData));
+        localStorage.setItem('employeeNameList', JSON.stringify(savedEmployeeList));
     }
 
-    // 관리자 로그인 토글
+    // 관리자 로그인 토글 (비밀번호: 1234)
     function toggleAdmin() {
         if (!isAdmin) {
             const password = prompt("관리자 비밀번호를 입력하세요 (기본: 1234):");
@@ -126,7 +170,7 @@
                 document.getElementById('admin-badge').textContent = "관리자 (수정 가능)";
                 document.getElementById('admin-badge').classList.add('active');
                 document.getElementById('auth-btn').textContent = "로그아웃";
-                alert("관리자 모드로 전환되었습니다. 날짜를 클릭하여 내역을 입력하세요.");
+                alert("관리자로 로그인되었습니다. 날짜를 클릭하여 입력하세요.");
             } else if (password !== null) {
                 alert("비밀번호가 올바르지 않습니다.");
             }
@@ -139,104 +183,158 @@
         renderCalendar();
     }
 
-    // 달력 렌더링
     function changeMonth(delta) {
         currentDate.setMonth(currentDate.getMonth() + delta);
         renderCalendar();
     }
 
+    // 달력 및 하단 합계표 그리기
     function renderCalendar() {
         const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        document.getElementById('month-display').textContent = `${year}년 ${String(month + 1).padStart(2, '0')}월`;
+        const month = currentDate.getMonth() + 1;
+        const monthPadded = String(month).padStart(2, '0');
+
+        document.getElementById('month-display').textContent = `${year}년 ${monthPadded}월`;
 
         const datesGrid = document.getElementById('dates-grid');
         datesGrid.innerHTML = '';
 
-        const firstDayIndex = new Date(year, month, 1).getDay();
-        const lastDayDate = new Date(year, month + 1, 0).getDate();
+        const firstDayIndex = new Date(year, month - 1, 1).getDay();
+        const lastDayDate = new Date(year, month, 0).getDate();
 
-        // 앞쪽 빈 칸 생성
+        // 빈 칸 생성
         for (let i = 0; i < firstDayIndex; i++) {
             datesGrid.innerHTML += `<div class="date-cell empty"></div>`;
         }
 
-        // 실제 날짜 생성
+        // 날짜 생성
         for (let day = 1; day <= lastDayDate; day++) {
             const dateCell = document.createElement('div');
             dateCell.className = 'date-cell';
-            
-            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            const dayPadded = String(day).padStart(2, '0');
+            const dateKey = `${year}-${monthPadded}-${dayPadded}`;
             const dayData = timesData[dateKey] || {};
 
-            // 해당 날짜에 있는 데이터들(이름: 타임수)을 달력에 표시
-            let listHtml = '<div class="time-list-container">';
+            let tagsHtml = '<div class="time-tags">';
             Object.keys(dayData).forEach(empName => {
-                listHtml += `<span class="time-item">${empName}: ${dayData[empName]}</span>`;
+                tagsHtml += `<span class="tag">${empName}: ${dayData[empName]}</span>`;
             });
-            listHtml += '</div>';
+            tagsHtml += '</div>';
 
-            dateCell.innerHTML = `<div class="date-num">${day}</div>${listHtml}`;
-            
-            // 날짜 클릭 시 팝업 열기
+            dateCell.innerHTML = `<div class="date-num">${day}</div>${tagsHtml}`;
             dateCell.onclick = () => openModal(dateKey, day);
+
             datesGrid.appendChild(dateCell);
         }
+
+        // 하단 직원별 월 합계표 업데이트
+        renderMonthlySummary(year, monthPadded);
+        updateDatalist();
     }
 
-    // 모달(팝업창) 열기
+    // 하단 직원별 월 총 합계 표 생성 함수
+    function renderMonthlySummary(year, monthPadded) {
+        const prefix = `${year}-${monthPadded}`;
+        const empTotals = {};
+        let grandTotal = 0;
+
+        Object.keys(timesData).forEach(dateKey => {
+            if (dateKey.startsWith(prefix)) {
+                const dayData = timesData[dateKey];
+                Object.keys(dayData).forEach(empName => {
+                    const val = parseFloat(dayData[empName]) || 0;
+                    empTotals[empName] = (empTotals[empName] || 0) + val;
+                    grandTotal += val;
+                });
+            }
+        });
+
+        const tbody = document.getElementById('summary-tbody');
+        tbody.innerHTML = '';
+
+        const sortedEmployees = Object.keys(empTotals).sort((a, b) => empTotals[b] - empTotals[a]);
+
+        if (sortedEmployees.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#a0aec0; padding:15px;">이번 달 등록된 내역이 없습니다.</td></tr>';
+        } else {
+            sortedEmployees.forEach((empName, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${idx + 1}</td>
+                    <td><b>${empName}</b></td>
+                    <td><span class="total-val">${empTotals[empName]}</span> 타임</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('grand-total').textContent = grandTotal.toLocaleString();
+    }
+
+    // 직원 이름 자동완성 목록 갱신
+    function updateDatalist() {
+        const datalist = document.getElementById('employee-suggestions');
+        datalist.innerHTML = '';
+        savedEmployeeList.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            datalist.appendChild(opt);
+        });
+    }
+
+    // 팝업 모달 열기
     function openModal(dateKey, day) {
         selectedDateKey = dateKey;
         const [y, m, d] = dateKey.split('-');
-        document.getElementById('modal-date-title').textContent = `${m}월 ${d}일 근무 내역`;
-        
-        const modalBody = document.getElementById('modal-body');
-        modalBody.innerHTML = '';
+        document.getElementById('modal-title').textContent = `${parseInt(m)}월 ${parseInt(d)}일 근무 내역`;
 
-        const dayData = timesData[dateKey] || {};
-        const empList = Object.keys(dayData);
+        renderModalList();
 
-        if (empList.length === 0) {
-            modalBody.innerHTML = '<div style="color:#a0aec0; text-align:center; padding:15px;">입력된 내역이 없습니다.</div>';
+        document.getElementById('admin-form').style.display = isAdmin ? 'flex' : 'none';
+        document.getElementById('notice-msg').style.display = isAdmin ? 'none' : 'block';
+
+        document.getElementById('modal-backdrop').style.display = 'flex';
+    }
+
+    // 모달 내부 입력된 직원 목록 렌더링
+    function renderModalList() {
+        const modalList = document.getElementById('modal-list');
+        modalList.innerHTML = '';
+
+        const dayData = timesData[selectedDateKey] || {};
+        const empNames = Object.keys(dayData);
+
+        if (empNames.length === 0) {
+            modalList.innerHTML = '<div style="text-align:center; color:#a0aec0; padding:15px;">등록된 내역이 없습니다.</div>';
         } else {
-            empList.forEach(empName => {
-                // 관리자일 경우 삭제 버튼 추가
-                const deleteBtn = isAdmin ? `<button class="delete-btn" onclick="deleteTimeData('${empName}')">삭제</button>` : '';
-                modalBody.innerHTML += `
-                    <div class="modal-item">
-                        <span><b>${empName}</b> 님</span>
-                        <span>${dayData[empName]} 타임 ${deleteBtn}</span>
-                    </div>
+            empNames.forEach(empName => {
+                const item = document.createElement('div');
+                item.className = 'modal-item';
+                const delBtnHtml = isAdmin ? `<button class="del-btn" onclick="deleteTimeData('${empName}')">삭제</button>` : '';
+                item.innerHTML = `
+                    <span><b>${empName}</b></span>
+                    <span>${dayData[empName]} 타임 ${delBtnHtml}</span>
                 `;
+                modalList.appendChild(item);
             });
         }
-
-        // 관리자 모드일 때만 하단 입력폼 보이기
-        document.getElementById('admin-input-area').style.display = isAdmin ? 'block' : 'none';
-        
-        // 오류 수정: 오타로 인해 안열리던 부분 수정 완료!
-        document.getElementById('modal-overlay').style.display = 'flex';
     }
 
-    // 팝업창 닫기
-    function closeModal() {
-        document.getElementById('modal-overlay').style.display = 'none';
-        // 입력창 초기화
-        document.getElementById('emp-name').value = '';
-        document.getElementById('emp-time').value = '';
-    }
-
-    // 새로운 데이터 입력(추가) 함수
+    // 데이터 추가/수정
     function addTimeData() {
-        const name = document.getElementById('emp-name').value.trim();
-        const time = parseFloat(document.getElementById('emp-time').value);
+        const nameInput = document.getElementById('input-name');
+        const timeInput = document.getElementById('input-time');
+
+        const name = nameInput.value.trim();
+        const time = parseFloat(timeInput.value);
 
         if (!name) {
-            alert('직원 이름을 입력해주세요.');
+            alert('직원 이름을 입력하세요.');
             return;
         }
         if (isNaN(time)) {
-            alert('정확한 타임수(숫자)를 입력해주세요.');
+            alert('타임수를 숫자로 입력하세요.');
             return;
         }
 
@@ -245,28 +343,40 @@
         }
 
         timesData[selectedDateKey][name] = time;
-        saveData();
-        
-        // 입력칸 비우기
-        document.getElementById('emp-name').value = '';
-        document.getElementById('emp-time').value = '';
 
-        // 화면 새로고침
+        // 새로운 직원 이름 자동완성 목록에 추가
+        if (!savedEmployeeList.includes(name)) {
+            savedEmployeeList.push(name);
+        }
+
+        saveData();
+
+        nameInput.value = '';
+        timeInput.value = '';
+
+        renderModalList();
         renderCalendar();
-        openModal(selectedDateKey); // 모달창 내용도 바로 업데이트
     }
 
-    // 데이터 삭제 함수
+    // 데이터 삭제
     function deleteTimeData(empName) {
         if (confirm(`${empName} 님의 내역을 삭제하시겠습니까?`)) {
             delete timesData[selectedDateKey][empName];
             saveData();
+            renderModalList();
             renderCalendar();
-            openModal(selectedDateKey); // 모달창 내용 업데이트
         }
     }
 
-    // 처음 화면 띄울 때 달력 그리기
+    function closeModal() {
+        document.getElementById('modal-backdrop').style.display = 'none';
+    }
+
+    function closeModalOnBackdrop(e) {
+        if (e.target.id === 'modal-backdrop') closeModal();
+    }
+
+    // 초기 실행
     renderCalendar();
 </script>
 
