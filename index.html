@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>직원 타임수 종합 관리판</title>
+    <title>직원 타임수 종합 관리판 (Firebase 연동)</title>
+    
+    <!-- Firebase SDK (compat 버전) 추가 -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
         * { box-sizing: border-box; font-family: 'Pretendard', 'Malgun Gothic', sans-serif; }
         body { background-color: #f4f6f9; margin: 0; padding: 15px 10px; display: flex; flex-direction: column; align-items: center; }
@@ -28,7 +33,7 @@
         .form-grid input { padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; width: 100%; height: 44px; }
         .btn-save-main { background: #38a169; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer; height: 44px; }
 
-        /* 📱 모바일 커스텀 추천 검색 박스 */
+        /* 모바일 커스텀 추천 검색 박스 */
         .name-input-container { position: relative; width: 100%; }
         .custom-suggestions-box { 
             display: none; 
@@ -44,14 +49,7 @@
             z-index: 100; 
             box-shadow: 0 6px 16px rgba(0,0,0,0.15); 
         }
-        .suggestion-item { 
-            padding: 12px; 
-            font-size: 14px; 
-            cursor: pointer; 
-            border-bottom: 1px solid #edf2f7; 
-            color: #2d3748; 
-            font-weight: 500;
-        }
+        .suggestion-item { padding: 12px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #edf2f7; color: #2d3748; font-weight: 500; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:active { background-color: #ebf8ff; color: #2b6cb0; font-weight: bold; }
 
@@ -60,7 +58,7 @@
         .month-nav h2 { margin: 0; font-size: 20px; color: #2d3748; }
         .month-nav button { background: white; border: 1px solid #cbd5e0; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; height: 38px; }
 
-        /* 모바일 스크롤 달력 감싸기 */
+        /* 모바일 스크롤 달력 */
         .calendar-scroll-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; padding-bottom: 8px; }
         .calendar-inner { min-width: 600px; }
 
@@ -92,7 +90,7 @@
         .summary-table th { background-color: #f7fafc; color: #4a5568; font-weight: bold; }
         .total-val { color: #3182ce; font-weight: bold; font-size: 14px; }
 
-        /* 📱 일별 상세 내역 모달 (팝업창) */
+        /* 일별 상세 내역 모달 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 480px; max-height: 85vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
@@ -135,7 +133,6 @@
         <div class="form-grid">
             <input type="date" id="input-date">
             
-            <!-- 모바일 키보드 가림 방지 커스텀 이름 입력창 -->
             <div class="name-input-container">
                 <input type="text" id="input-name" placeholder="직원 이름 (예: 홍길동)" 
                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
@@ -154,7 +151,6 @@
         <button onclick="changeMonth(1)">다음달 &gt;</button>
     </div>
 
-    <!-- 모바일 터치 스크롤 지원 영역 -->
     <div class="calendar-scroll-container">
         <div class="calendar-inner">
             <div class="days-header">
@@ -187,7 +183,7 @@
     </div>
 </div>
 
-<!-- 📱 일별 상세 내역 팝업 모달 -->
+<!-- 일별 상세 내역 팝업 모달 -->
 <div id="date-modal" class="modal-overlay" onclick="closeDateModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -203,20 +199,66 @@
 </div>
 
 <script>
+    // -------------------------------------------------------------
+    // 🔥 파이어베이스 설정 (적용 완료!)
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyDfVycUkONZs-RCBHqwzFweS-5avrWUhVc",
+      authDomain: "park-management-2055a.firebaseapp.com",
+      projectId: "park-management-2055a",
+      storageBucket: "park-management-2055a.firebasestorage.app",
+      messagingSenderId: "1014430922351",
+      appId: "1:1014430922351:web:8514885df6e2c2c9bf3f9a",
+      measurementId: "G-W0H7EV2L1L"
+    };
+
+    // Firebase 초기화
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // -------------------------------------------------------------
+    // 변수 및 데이터 선언
+    // -------------------------------------------------------------
     let currentDate = new Date();
     let isAdmin = false;
     let selectedDateKey = null;
 
     let adminPassword = localStorage.getItem('employeeAdminPw') || '1234';
-    let timesData = JSON.parse(localStorage.getItem('employeeTimesData_v6')) || {};
-    let savedEmployeeList = JSON.parse(localStorage.getItem('employeeNameList')) || [];
+    let timesData = {};
+    let savedEmployeeList = [];
 
     const todayStr = currentDate.toISOString().split('T')[0];
     document.getElementById('input-date').value = todayStr;
 
+    // 🔥 Firestore 데이터 실시간 동기화 구독 함수
+    function initFirestoreListener() {
+        // 타임수 데이터 실시간 수신
+        db.collection("employee_management").doc("times_data")
+          .onSnapshot((doc) => {
+              if (doc.exists) {
+                  timesData = doc.data().data || {};
+              } else {
+                  timesData = {};
+              }
+              renderCalendar();
+              if (selectedDateKey) renderModalList();
+          });
+
+        // 직원 목록 실시간 수신
+        db.collection("employee_management").doc("employee_list")
+          .onSnapshot((doc) => {
+              if (doc.exists) {
+                  savedEmployeeList = doc.data().list || [];
+              } else {
+                  savedEmployeeList = [];
+              }
+          });
+    }
+
+    // 🔥 Firebase Firestore 저장 함수
     function saveData() {
-        localStorage.setItem('employeeTimesData_v6', JSON.stringify(timesData));
-        localStorage.setItem('employeeNameList', JSON.stringify(savedEmployeeList));
+        db.collection("employee_management").doc("times_data").set({ data: timesData });
+        db.collection("employee_management").doc("employee_list").set({ list: savedEmployeeList });
     }
 
     function changeAdminPassword() {
@@ -257,7 +299,6 @@
         renderCalendar();
     }
 
-    /* 📱 스마트폰 전용 커스텀 추천 기능 */
     function showNameSuggestions() {
         const inputVal = document.getElementById('input-name').value.trim().toLowerCase();
         const box = document.getElementById('name-suggestions-box');
@@ -280,7 +321,6 @@
             item.className = 'suggestion-item';
             item.textContent = name;
             
-            // 모바일 터치 반응 속도를 높이기 위한 이벤트
             item.onmousedown = (e) => {
                 e.preventDefault();
                 selectNameSuggestion(name);
@@ -294,10 +334,9 @@
     function selectNameSuggestion(name) {
         document.getElementById('input-name').value = name;
         document.getElementById('name-suggestions-box').style.display = 'none';
-        document.getElementById('input-time').focus(); // 타임수 입력칸으로 포커스 자동 이동
+        document.getElementById('input-time').focus();
     }
 
-    // 다른 영역 터치 시 추천창 닫기
     document.addEventListener('click', function(e) {
         const container = document.querySelector('.name-input-container');
         if (container && !container.contains(e.target)) {
@@ -319,7 +358,7 @@
 
         if (!savedEmployeeList.includes(nameInput)) savedEmployeeList.push(nameInput);
 
-        saveData();
+        saveData(); // Firestore에 실시간 저장
 
         document.getElementById('input-name').value = '';
         document.getElementById('input-time').value = '';
@@ -328,23 +367,13 @@
         const [y, m] = dateInput.split('-');
         currentDate.setFullYear(parseInt(y));
         currentDate.setMonth(parseInt(m) - 1);
-
-        renderCalendar();
-        
-        if (selectedDateKey === dateInput) {
-            renderModalList();
-        }
     }
 
     function deleteTime(dateKey, empName) {
         if (!isAdmin) return;
         if (confirm(`[${dateKey}] ${empName} 님의 내역을 삭제하시겠습니까?`)) {
             delete timesData[dateKey][empName];
-            saveData();
-            renderCalendar();
-            if (selectedDateKey === dateKey) {
-                renderModalList();
-            }
+            saveData(); // Firestore에 실시간 삭제 반영
         }
     }
 
@@ -505,7 +534,8 @@
         }
     }
 
-    renderCalendar();
+    // 실행 시 Firestore 실시간 동기화 작동
+    initFirestoreListener();
 </script>
 
 </body>
