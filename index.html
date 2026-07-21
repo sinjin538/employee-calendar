@@ -19,7 +19,16 @@
         .btn-primary { background-color: #3182ce; color: white; }
         .btn-primary:hover { background-color: #2b6cb0; }
 
-        /* 월 이동 컨트롤 */
+        /* 관리자 전용 바로 입력 상자 */
+        .quick-input-box { display: none; background: #eef6ff; border: 2px solid #3182ce; padding: 18px; border-radius: 10px; margin-bottom: 20px; }
+        .quick-input-box h3 { margin: 0 0 12px 0; font-size: 16px; color: #2b6cb0; display: flex; align-items: center; gap: 6px; }
+        .form-grid { display: grid; grid-template-columns: 1.2fr 1.5fr 1fr 1fr; gap: 10px; }
+        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-grid input { padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; width: 100%; }
+        .btn-save-main { background: #38a169; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer; padding: 10px; }
+        .btn-save-main:hover { background: #2f855a; }
+
+        /* 월 선택 */
         .month-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .month-nav h2 { margin: 0; font-size: 22px; color: #2d3748; }
         .month-nav button { background: white; border: 1px solid #cbd5e0; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -37,7 +46,8 @@
         .date-num { font-size: 14px; font-weight: bold; color: #2d3748; margin-bottom: 4px; }
 
         .time-tags { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-        .tag { background: #ebf8ff; color: #2b6cb0; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tag { background: #ebf8ff; color: #2b6cb0; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tag-del { color: #e53e3e; margin-left: 4px; font-weight: bold; cursor: pointer; }
 
         /* 하단 직원별 월 합계 표 */
         .summary-section { margin-top: 35px; border-top: 2px solid #edf2f7; padding-top: 20px; }
@@ -51,30 +61,11 @@
         .summary-table th { background-color: #f7fafc; color: #4a5568; font-weight: bold; }
         .summary-table tr:hover { background-color: #f8fafc; }
         .total-val { color: #3182ce; font-weight: bold; font-size: 15px; }
-
-        /* 팝업 모달 */
-        .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999; }
-        .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 420px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 15px; }
-        .modal-header h3 { margin: 0; font-size: 18px; color: #2d3748; }
-        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #a0aec0; }
-        
-        .modal-list { max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
-        .modal-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f7fafc; border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
-        .modal-item .del-btn { color: #e53e3e; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 12px; }
-
-        .admin-form { border-top: 2px dashed #cbd5e0; padding-top: 15px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .form-row { display: flex; gap: 8px; }
-        .form-row input { flex: 1; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
-        .btn-save { background: #48bb78; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-save:hover { background: #38a169; }
-        .notice-msg { font-size: 13px; color: #718096; text-align: center; background: #edf2f7; padding: 8px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 상단 헤더 -->
     <div class="header-bar">
         <h1>🗓️ 직원 타임수 현황판</h1>
         <div class="admin-controls">
@@ -83,22 +74,30 @@
         </div>
     </div>
 
-    <!-- 월 선택 -->
+    <!-- 관리자 전용 빠른 입력 상자 -->
+    <div id="quick-input-box" class="quick-input-box">
+        <h3>✏️ 관리자 타임수 바로 입력</h3>
+        <div class="form-grid">
+            <input type="date" id="input-date">
+            <input type="text" id="input-name" list="employee-suggestions" placeholder="직원 이름 (예: 홍길동)">
+            <datalist id="employee-suggestions"></datalist>
+            <input type="number" id="input-time" placeholder="타임수 (예: 5)" step="0.5">
+            <button class="btn-save-main" onclick="addTimeDataQuick()">입력 / 수정 저장</button>
+        </div>
+    </div>
+
     <div class="month-nav">
         <button onclick="changeMonth(-1)">&lt; 이전달</button>
         <h2 id="month-display">2026년 07월</h2>
         <button onclick="changeMonth(1)">다음달 &gt;</button>
     </div>
 
-    <!-- 요일 표시 -->
     <div class="days-header">
         <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
     </div>
 
-    <!-- 달력 날짜 그리드 -->
     <div id="dates-grid" class="dates-grid"></div>
 
-    <!-- 하단 직원별 월 합계 영역 -->
     <div class="summary-section">
         <div class="summary-header">
             <h3>📊 직원별 월 타임수 총 합계</h3>
@@ -112,52 +111,24 @@
                     <th style="width: 40%;">이번 달 누적 타임수</th>
                 </tr>
             </thead>
-            <tbody id="summary-tbody">
-                <!-- 자바스크립트로 자동 생성됨 -->
-            </tbody>
+            <tbody id="summary-tbody"></tbody>
         </table>
-    </div>
-</div>
-
-<!-- 상세 모달 팝업 -->
-<div id="modal-backdrop" class="modal-backdrop" onclick="closeModalOnBackdrop(event)">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modal-title">근무 입력</h3>
-            <button class="close-btn" onclick="closeModal()">✕</button>
-        </div>
-        
-        <!-- 등록된 목록 -->
-        <div id="modal-list" class="modal-list"></div>
-
-        <!-- 관리자 작성 폼 -->
-        <div id="admin-form" class="admin-form">
-            <div class="form-row">
-                <input type="text" id="input-name" list="employee-suggestions" placeholder="직원 이름 (예: 홍길동)">
-                <datalist id="employee-suggestions"></datalist>
-                <input type="number" id="input-time" placeholder="타임수 (예: 5)" step="0.5">
-            </div>
-            <button class="btn-save" onclick="addTimeData()">추가 / 수정하기</button>
-        </div>
-
-        <!-- 직원 안내 문구 -->
-        <div id="notice-msg" class="notice-msg" style="display: none;">
-            🔒 직원 모드에서는 조회만 가능합니다. 상단 '관리자 인증' 버튼을 눌러 로그인하세요.
-        </div>
     </div>
 </div>
 
 <script>
     let currentDate = new Date();
     let isAdmin = false;
-    let selectedDateKey = '';
 
-    // 데이터 저장
-    let timesData = JSON.parse(localStorage.getItem('employeeTimesData_v5')) || {};
+    let timesData = JSON.parse(localStorage.getItem('employeeTimesData_v6')) || {};
     let savedEmployeeList = JSON.parse(localStorage.getItem('employeeNameList')) || [];
 
+    // 오늘 날짜 기본 세팅
+    const todayStr = currentDate.toISOString().split('T')[0];
+    document.getElementById('input-date').value = todayStr;
+
     function saveData() {
-        localStorage.setItem('employeeTimesData_v5', JSON.stringify(timesData));
+        localStorage.setItem('employeeTimesData_v6', JSON.stringify(timesData));
         localStorage.setItem('employeeNameList', JSON.stringify(savedEmployeeList));
     }
 
@@ -170,7 +141,7 @@
                 document.getElementById('admin-badge').textContent = "관리자 (수정 가능)";
                 document.getElementById('admin-badge').classList.add('active');
                 document.getElementById('auth-btn').textContent = "로그아웃";
-                alert("관리자로 로그인되었습니다. 날짜를 클릭하여 입력하세요.");
+                document.getElementById('quick-input-box').style.display = 'block';
             } else if (password !== null) {
                 alert("비밀번호가 올바르지 않습니다.");
             }
@@ -179,6 +150,7 @@
             document.getElementById('admin-badge').textContent = "직원 (조회전용)";
             document.getElementById('admin-badge').classList.remove('active');
             document.getElementById('auth-btn').textContent = "관리자 인증";
+            document.getElementById('quick-input-box').style.display = 'none';
         }
         renderCalendar();
     }
@@ -186,6 +158,44 @@
     function changeMonth(delta) {
         currentDate.setMonth(currentDate.getMonth() + delta);
         renderCalendar();
+    }
+
+    // 빠른 입력 함수
+    function addTimeDataQuick() {
+        const dateInput = document.getElementById('input-date').value;
+        const nameInput = document.getElementById('input-name').value.trim();
+        const timeVal = parseFloat(document.getElementById('input-time').value);
+
+        if (!dateInput) { alert('날짜를 선택해 주세요.'); return; }
+        if (!nameInput) { alert('직원 이름을 입력해 주세요.'); return; }
+        if (isNaN(timeVal)) { alert('타임수를 숫자로 입력해 주세요.'); return; }
+
+        if (!timesData[dateInput]) timesData[dateInput] = {};
+        timesData[dateInput][nameInput] = timeVal;
+
+        if (!savedEmployeeList.includes(nameInput)) savedEmployeeList.push(nameInput);
+
+        saveData();
+
+        document.getElementById('input-name').value = '';
+        document.getElementById('input-time').value = '';
+        document.getElementById('input-name').focus();
+
+        const [y, m] = dateInput.split('-');
+        currentDate.setFullYear(parseInt(y));
+        currentDate.setMonth(parseInt(m) - 1);
+
+        renderCalendar();
+    }
+
+    // 데이터 삭제 함수
+    function deleteTime(dateKey, empName) {
+        if (!isAdmin) return;
+        if (confirm(`[${dateKey}] ${empName} 님의 내역을 삭제하시겠습니까?`)) {
+            delete timesData[dateKey][empName];
+            saveData();
+            renderCalendar();
+        }
     }
 
     // 달력 및 하단 합계표 그리기
@@ -202,12 +212,10 @@
         const firstDayIndex = new Date(year, month - 1, 1).getDay();
         const lastDayDate = new Date(year, month, 0).getDate();
 
-        // 빈 칸 생성
         for (let i = 0; i < firstDayIndex; i++) {
             datesGrid.innerHTML += `<div class="date-cell empty"></div>`;
         }
 
-        // 날짜 생성
         for (let day = 1; day <= lastDayDate; day++) {
             const dateCell = document.createElement('div');
             dateCell.className = 'date-cell';
@@ -218,22 +226,25 @@
 
             let tagsHtml = '<div class="time-tags">';
             Object.keys(dayData).forEach(empName => {
-                tagsHtml += `<span class="tag">${empName}: ${dayData[empName]}</span>`;
+                const delBtn = isAdmin ? `<span class="tag-del" onclick="event.stopPropagation(); deleteTime('${dateKey}', '${empName}')">✕</span>` : '';
+                tagsHtml += `<span class="tag"><span>${empName}: ${dayData[empName]}</span>${delBtn}</span>`;
             });
             tagsHtml += '</div>';
 
             dateCell.innerHTML = `<div class="date-num">${day}</div>${tagsHtml}`;
-            dateCell.onclick = () => openModal(dateKey, day);
+            
+            dateCell.onclick = () => {
+                document.getElementById('input-date').value = dateKey;
+                if (isAdmin) document.getElementById('input-name').focus();
+            };
 
             datesGrid.appendChild(dateCell);
         }
 
-        // 하단 직원별 월 합계표 업데이트
         renderMonthlySummary(year, monthPadded);
         updateDatalist();
     }
 
-    // 하단 직원별 월 총 합계 표 생성 함수
     function renderMonthlySummary(year, monthPadded) {
         const prefix = `${year}-${monthPadded}`;
         const empTotals = {};
@@ -272,7 +283,6 @@
         document.getElementById('grand-total').textContent = grandTotal.toLocaleString();
     }
 
-    // 직원 이름 자동완성 목록 갱신
     function updateDatalist() {
         const datalist = document.getElementById('employee-suggestions');
         datalist.innerHTML = '';
@@ -283,100 +293,6 @@
         });
     }
 
-    // 팝업 모달 열기
-    function openModal(dateKey, day) {
-        selectedDateKey = dateKey;
-        const [y, m, d] = dateKey.split('-');
-        document.getElementById('modal-title').textContent = `${parseInt(m)}월 ${parseInt(d)}일 근무 내역`;
-
-        renderModalList();
-
-        document.getElementById('admin-form').style.display = isAdmin ? 'flex' : 'none';
-        document.getElementById('notice-msg').style.display = isAdmin ? 'none' : 'block';
-
-        document.getElementById('modal-backdrop').style.display = 'flex';
-    }
-
-    // 모달 내부 입력된 직원 목록 렌더링
-    function renderModalList() {
-        const modalList = document.getElementById('modal-list');
-        modalList.innerHTML = '';
-
-        const dayData = timesData[selectedDateKey] || {};
-        const empNames = Object.keys(dayData);
-
-        if (empNames.length === 0) {
-            modalList.innerHTML = '<div style="text-align:center; color:#a0aec0; padding:15px;">등록된 내역이 없습니다.</div>';
-        } else {
-            empNames.forEach(empName => {
-                const item = document.createElement('div');
-                item.className = 'modal-item';
-                const delBtnHtml = isAdmin ? `<button class="del-btn" onclick="deleteTimeData('${empName}')">삭제</button>` : '';
-                item.innerHTML = `
-                    <span><b>${empName}</b></span>
-                    <span>${dayData[empName]} 타임 ${delBtnHtml}</span>
-                `;
-                modalList.appendChild(item);
-            });
-        }
-    }
-
-    // 데이터 추가/수정
-    function addTimeData() {
-        const nameInput = document.getElementById('input-name');
-        const timeInput = document.getElementById('input-time');
-
-        const name = nameInput.value.trim();
-        const time = parseFloat(timeInput.value);
-
-        if (!name) {
-            alert('직원 이름을 입력하세요.');
-            return;
-        }
-        if (isNaN(time)) {
-            alert('타임수를 숫자로 입력하세요.');
-            return;
-        }
-
-        if (!timesData[selectedDateKey]) {
-            timesData[selectedDateKey] = {};
-        }
-
-        timesData[selectedDateKey][name] = time;
-
-        // 새로운 직원 이름 자동완성 목록에 추가
-        if (!savedEmployeeList.includes(name)) {
-            savedEmployeeList.push(name);
-        }
-
-        saveData();
-
-        nameInput.value = '';
-        timeInput.value = '';
-
-        renderModalList();
-        renderCalendar();
-    }
-
-    // 데이터 삭제
-    function deleteTimeData(empName) {
-        if (confirm(`${empName} 님의 내역을 삭제하시겠습니까?`)) {
-            delete timesData[selectedDateKey][empName];
-            saveData();
-            renderModalList();
-            renderCalendar();
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('modal-backdrop').style.display = 'none';
-    }
-
-    function closeModalOnBackdrop(e) {
-        if (e.target.id === 'modal-backdrop') closeModal();
-    }
-
-    // 초기 실행
     renderCalendar();
 </script>
 
